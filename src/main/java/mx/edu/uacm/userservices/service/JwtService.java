@@ -71,4 +71,46 @@ public class JwtService {
         }
     }
 
+    public String generateRecoveryToken(Long id, String correo) {
+
+        Date ahora = new Date();
+
+        // 10 minutos de vida para el token temporal
+        Date expiracion = new Date(
+                ahora.getTime() + 600000
+        );
+
+        return Jwts.builder()
+                .subject(correo)
+                .claim("id", id)
+                .claim("tipo", "RECUPERACION")
+                .issuedAt(ahora)
+                .expiration(expiracion)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String extractTipo(String token) {
+        return extractClaims(token)
+                .get("tipo", String.class);
+    }
+
+    public boolean isRecoveryTokenValid(String token) {
+
+        try {
+
+            Claims claims = extractClaims(token);
+
+            String tipo = claims.get(
+                    "tipo",
+                    String.class
+            );
+
+            return "RECUPERACION".equals(tipo);
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

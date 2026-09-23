@@ -27,7 +27,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/comensal/registrar",
-                                "/comensal/auth")
+                                "/comensal/auth",
+                                "/comensal/recuperar",
+                                "/comensal/restablecer-contrasenia")
                         .permitAll()
                         .requestMatchers("/comensal/perfil")
                         .hasRole("USER")

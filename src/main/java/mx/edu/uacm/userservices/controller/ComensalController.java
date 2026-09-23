@@ -1,5 +1,6 @@
 package mx.edu.uacm.userservices.controller;
 
+import com.sun.net.httpserver.Authenticator;
 import jakarta.validation.Valid;
 import mx.edu.uacm.userservices.dto.*;
 import mx.edu.uacm.userservices.model.Comensal;
@@ -20,7 +21,7 @@ public class ComensalController {
     @PostMapping("/registrar")
     public ResponseEntity<RegistroResponse> executeSaveComensal(@Valid @RequestBody Comensal comensal){
         try{
-            comensalService.executeSaveComensal(comensal);
+            comensalService.executeSaveCustomer(comensal);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(new RegistroResponse(
@@ -48,5 +49,28 @@ public class ComensalController {
         return ResponseEntity.ok(comensalResponse);
     }
 
+    @PutMapping("/perfil")
+    public ResponseEntity<ComensalResponse> executeUpdateComensal(@Valid @RequestBody ActualizarPerfilRequest actualizarPerfilRequest, Authentication authentication){
+
+        String correo = authentication.getName();
+
+        ComensalResponse comensalResponse = comensalService.executeUpdateCustomer(correo, actualizarPerfilRequest);
+
+        return ResponseEntity.ok(comensalResponse);
+    }
+
+    @PostMapping("/recuperar")
+    public ResponseEntity<RecuperarCuentaResponse> executeRecoverCustomer(@Valid @RequestBody RecuperarCuentaRequest recuperarCuentaRequest){
+        RecuperarCuentaResponse response = comensalService.executeRecoverCustomer(recuperarCuentaRequest);
+        return ResponseEntity.ok( response );
+    }
+
+    @PostMapping("/restablecer-contrasenia")
+    public ResponseEntity<MensajeResponse> executeResetCustomerPassword( @Valid @RequestBody NuevaContraseniaRequest nuevaContraseniaRequest) {
+
+        comensalService.executeResetCustomerPassword( nuevaContraseniaRequest );
+
+        return ResponseEntity.ok( new MensajeResponse( "Contraseña actualizada correctamente") );
+    }
 
 }

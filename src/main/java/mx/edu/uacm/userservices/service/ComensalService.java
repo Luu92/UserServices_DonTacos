@@ -1,10 +1,10 @@
 package mx.edu.uacm.userservices.service;
 
-import mx.edu.uacm.userservices.dto.ComensalResponse;
-import mx.edu.uacm.userservices.dto.LoginRequest;
-import mx.edu.uacm.userservices.dto.LoginResponse;
+import mx.edu.uacm.userservices.dto.*;
 import mx.edu.uacm.userservices.exception.ComensalNoEncontradoException;
 import mx.edu.uacm.userservices.exception.CredencialesInvalidasException;
+import mx.edu.uacm.userservices.exception.RecuperarCuentaException;
+import mx.edu.uacm.userservices.exception.TelefonoRegistradoException;
 import mx.edu.uacm.userservices.model.Comensal;
 import mx.edu.uacm.userservices.model.Rol;
 import mx.edu.uacm.userservices.model.Usuario;
@@ -30,7 +30,7 @@ public class ComensalService {
     private JwtService jwtService;
 
 
-    public Comensal executeSaveComensal(Comensal comensal){
+    public Comensal executeSaveCustomer(Comensal comensal){
 
         if(usuarioRepository.existsByCorreo(comensal.getCorreo())){
             throw new RuntimeException("El correo ya está registrado");
@@ -108,6 +108,87 @@ public class ComensalService {
                 comensal.getTelefono(),
                 comensal.getRol().getNombre()
         );
+    }
+
+    public ComensalResponse executeUpdateCustomer(String correo, ActualizarPerfilRequest actualizarPerfilRequest){
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() ->
+                        new ComensalNoEncontradoException(
+                                "Comensal no encontrado"
+                        )
+                );
+
+        if (!usuario.getRol().getNombre().equals("USER")) {
+            throw new ComensalNoEncontradoException(
+                    "Comensal no encontrado"
+            );
+        }
+
+        Comensal comensal = (Comensal) usuario;
+
+        boolean telefonoRegistrado =
+                comensalRepository.existsByTelefonoAndIdNot(
+                        actualizarPerfilRequest.getTelefono(),
+                        comensal.getId()
+                );
+
+        if(telefonoRegistrado){
+            throw new TelefonoRegistradoException("Teléfono ya se encuentra registrado");
+        }
+
+        comensal.setNombre(actualizarPerfilRequest.getNombre());
+        comensal.setTelefono(actualizarPerfilRequest.getTelefono());
+
+        comensalRepository.save(comensal);
+
+        return new ComensalResponse(
+                comensal.getId(),
+                comensal.getNombre(),
+                comensal.getApePaterno(),
+                comensal.getApeMaterno(),
+                comensal.getCorreo(),
+                comensal.getTelefono(),
+                comensal.getRol().getNombre()
+
+        );
+    }
+
+    public RecuperarCuentaResponse executeRecoverCustomer( RecuperarCuentaRequest recuperarCuentaRequest ){
+        Comensal comensal = comensalRepository.findByCorreoAndTelefono(recuperarCuentaRequest.getCorreo(), recuperarCuentaRequest.getTelefono())
+                .orElseThrow( () -> new RecuperarCuentaException("Los Datos proporcionados no coinciden.") );
+
+        String recoveryToken = jwtService.generateRecoveryToken( comensal.getId() , comensal.getCorreo());
+
+        return new RecuperarCuentaResponse(
+                "Datos validados correctamente",
+                recoveryToken
+        );
+
+    }
+
+    public void executeResetCustomerPassword(NuevaContraseniaRequest nuevaContraseniaRequest){
+        String token = nuevaContraseniaRequest.getRecoveryToken();
+
+        if (!jwtService.isRecoveryTokenValid(token)) {
+            throw new RecuperarCuentaException(
+                    "Token de recuperación inválido o expirado"
+            );
+        }
+
+        String correo = jwtService.extractCorreo(token);
+
+        Comensal comensal =
+                comensalRepository.findByCorreo(correo)
+                        .orElseThrow(() ->
+                                new RecuperarCuentaException( "No fue posible recuperar la cuenta" )
+                        );
+
+        String passwordHash = passwordEncoder.encode( nuevaContraseniaRequest.getNuevaContrasenia() );
+
+        comensal.setContrasenia(passwordHash);
+
+        comensalRepository.save(comensal);
     }
 
 }

@@ -51,4 +51,18 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(exception.getMessage()));
     }
 
+    @ExceptionHandler(TelefonoRegistradoException.class)
+    public ResponseEntity<MensajeResponse> TelefonoRegistradoException(TelefonoRegistradoException exception) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new MensajeResponse(exception.getMessage()));
+    }
+
+    @ExceptionHandler(RecuperarCuentaException.class)
+    public ResponseEntity<MensajeResponse> RecuperarCuentaException(RecuperarCuentaException exception){
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new MensajeResponse(exception.getMessage()));
+    }
+
 }
